@@ -14,13 +14,17 @@ let channelReady = false;
 
 async function ensureAndroidChannel() {
   if (Platform.OS !== 'android' || channelReady) return;
-  await Notifications.setNotificationChannelAsync('alerts', {
-    name: 'Loyiha ogohlantirishlari',
-    importance: Notifications.AndroidImportance.HIGH,
-    vibrationPattern: [0, 250, 150, 250],
-    lightColor: '#C0392B',
-    sound: 'default',
-  });
+  try {
+    await Notifications.setNotificationChannelAsync('alerts', {
+      name: 'Loyiha ogohlantirishlari',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 150, 250],
+      lightColor: '#C0392B',
+      sound: 'default',
+    });
+  } catch {
+    // Expo Go (SDK 53+) ba'zida channel API null beradi — local notify ishlayveradi
+  }
   channelReady = true;
 }
 

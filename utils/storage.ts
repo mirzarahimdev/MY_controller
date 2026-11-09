@@ -6,6 +6,22 @@ import {
   INITIAL_PROJECTS,
 } from '../data/projects';
 import { Project } from '../types/project';
+import { isMonitorableUrl, sanitizeMonitorUrl } from './monitorUrl';
+
+/** Soxta GitHub URL larni monitoringdan olib tashlash */
+function scrubProject(p: Project): Project {
+  const url = sanitizeMonitorUrl(p.url);
+  if (url === p.url) return p;
+  return {
+    ...p,
+    url,
+    status: url ? p.status : p.status === 'online' || p.status === 'degraded' ? 'unknown' : p.status,
+    notes:
+      !url && p.url && !isMonitorableUrl(p.url)
+        ? 'GitHub/repo URL olib tashlandi — production health emas'
+        : p.notes,
+  };
+}
 
 const PROJECTS_KEY = 'mykontroller.projects.v2';
 const SETTINGS_KEY = 'mykontroller.settings.v1';
@@ -37,35 +53,38 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 /** Seed bilan merge: yangi qo‘shadi, mavjudlarning nom/URL/tavsifini yangilaydi */
 export function upsertFromSeed(stored: Project[], seed: Project[]): Project[] {
-  const map = new Map(stored.map((p) => [p.id, p]));
+  const map = new Map(stored.map((p) => [p.id, scrubProject(p)]));
 
   for (const s of seed) {
     const prev = map.get(s.id);
     if (!prev) {
-      map.set(s.id, { ...s });
+      map.set(s.id, scrubProject({ ...s }));
       continue;
     }
-    map.set(s.id, {
-      ...prev,
-      name: s.name,
-      type: s.type,
-      url: s.url,
-      description: s.description,
-      notifyOnDown: s.notifyOnDown ?? prev.notifyOnDown,
-      deployStatus: s.deployStatus,
-      deployHost: s.deployHost,
-      deployWhere: s.deployWhere,
-      deployStack: s.deployStack,
-      deployNotes: s.deployNotes,
-      // status/history/response saqlanadi — keyingi Tekshirish yangilaydi
-    });
+    map.set(
+      s.id,
+      scrubProject({
+        ...prev,
+        name: s.name,
+        type: s.type,
+        url: s.url,
+        description: s.description,
+        notifyOnDown: s.notifyOnDown ?? prev.notifyOnDown,
+        deployStatus: s.deployStatus,
+        deployHost: s.deployHost,
+        deployWhere: s.deployWhere,
+        deployStack: s.deployStack,
+        deployNotes: s.deployNotes,
+        // status/history/response saqlanadi — keyingi Tekshirish yangilaydi
+      })
+    );
   }
 
   // Seed tartibida, keyin qo‘lda qo‘shilganlar
   const seedIds = new Set(seed.map((p) => p.id));
   const ordered = seed.map((s) => map.get(s.id)!);
   for (const p of map.values()) {
-    if (!seedIds.has(p.id)) ordered.push(p);
+    if (!seedIds.has(p.id)) ordered.push(scrubProject(p));
   }
   return ordered;
 }
@@ -76,7 +95,12 @@ export async function loadProjects(): Promise<Project[]> {
   const seededVersion = await AsyncStorage.getItem(SEED_KEY);
 
   if (seededVersion === GITHUB_SEED_VERSION) {
-    return stored;
+    const scrubbed = stored.map(scrubProject);
+    const changed = scrubbed.some((p, i) => p.url !== stored[i]?.url);
+    if (changed) {
+      await AsyncStorage.setItem(PROJECTS_KEY, JSON.stringify(scrubbed));
+    }
+    return scrubbed;
   }
 
   const next = upsertFromSeed(stored, INITIAL_PROJECTS);

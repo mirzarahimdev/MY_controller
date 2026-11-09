@@ -2,6 +2,7 @@ import { API_URL } from '../constants/config';
 import { knownReposAsGithub } from '../data/githubCatalog';
 import { GITHUB_USERNAME } from '../data/projects';
 import { Project, ProjectType } from '../types/project';
+import { isMonitorableUrl, sanitizeMonitorUrl } from './monitorUrl';
 
 export type GithubRepo = {
   id: number;
@@ -33,36 +34,29 @@ function inferType(repo: GithubRepo): ProjectType {
   return 'website';
 }
 
-function healthUrl(repo: GithubRepo): string {
-  const home = (repo.homepage || '').trim();
-  if (home && /^https?:\/\//i.test(home)) return home;
-  // Private repolar uchun GitHub API 404 → URL ni github sahifasiga qo‘yamiz
-  if (repo.private) return repo.html_url;
-  return `https://api.github.com/repos/${repo.full_name}`;
-}
-
 export function repoToProject(repo: GithubRepo): Project {
   const type = inferType(repo);
-  const home = (repo.homepage || '').trim();
-  const hasLiveUrl = Boolean(home && /^https?:\/\//i.test(home));
+  const home = sanitizeMonitorUrl(repo.homepage);
+  const hasLiveUrl = Boolean(home && isMonitorableUrl(home));
   return {
     id: `gh:${repo.full_name}`,
     name: repo.name,
     type,
-    url: healthUrl(repo),
+    // Faqat haqiqiy production URL — GitHub sahifa/API monitoring emas
+    url: hasLiveUrl ? home : undefined,
     description:
       repo.description ||
       `GitHub${repo.private ? ' (private)' : ''}: ${repo.html_url}`,
     status: 'unknown',
-    notifyOnDown: hasLiveUrl || !repo.private,
+    notifyOnDown: hasLiveUrl,
     history: [],
     deployStatus: hasLiveUrl ? 'partial' : 'not_deployed',
     deployHost: hasLiveUrl ? home : '—',
     deployWhere: hasLiveUrl
-      ? 'GitHub homepage'
-      : 'GitHub repo (avto-import)',
+      ? 'GitHub homepage (tasdiqlanmagan)'
+      : 'GitHub repo — production URL yo‘q',
     deployStack: repo.language || '—',
-    deployNotes: `Avtomatik: ${repo.html_url}`,
+    deployNotes: `Repo: ${repo.html_url}`,
   };
 }
 

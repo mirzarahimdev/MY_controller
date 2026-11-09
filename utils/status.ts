@@ -8,6 +8,7 @@ import {
   ProjectType,
   StatusSummary,
 } from '../types/project';
+import { isMonitorableUrl } from './monitorUrl';
 import { getAuthToken } from './secure';
 import { calcUptimePercent } from './uptime';
 
@@ -29,13 +30,13 @@ export function getStatusColor(status: ProjectStatus): string {
 export function getStatusLabel(status: ProjectStatus): string {
   switch (status) {
     case 'online':
-      return 'Online';
+      return 'Ishlayapti';
     case 'offline':
-      return 'Offline';
+      return 'Ishlamayapti';
     case 'degraded':
       return 'Sekin';
     default:
-      return 'Noma’lum';
+      return 'Tekshirilmagan';
   }
 }
 
@@ -177,24 +178,65 @@ async function checkDirect(
   try {
     const res = await fetch(project.url!, {
       method: 'GET',
-      headers,
+      headers: { Accept: 'application/json, text/plain, */*', ...headers },
       signal: controller.signal,
     });
     clearTimeout(timeout);
     const ms = Date.now() - started;
-    if (res.ok) {
+    const bodyText = await res.text().catch(() => '');
+    let path = '';
+    try {
+      path = new URL(project.url!).pathname;
+    } catch {
+      path = '';
+    }
+    const looksHealth = /\/health\/?$/i.test(path) || /\/api\/health\/?$/i.test(path);
+    let bodyOk = true;
+    let bodyNote: string | undefined;
+    if (res.ok && looksHealth && bodyText) {
+      try {
+        const json = JSON.parse(bodyText) as {
+          status?: string;
+          ok?: boolean | string;
+          database?: string;
+          service?: string;
+        };
+        const st = String(json?.status ?? json?.ok ?? '').toLowerCase();
+        const db =
+          json?.database != null ? String(json.database).toLowerCase() : null;
+        const healthy =
+          st === 'ok' ||
+          st === 'healthy' ||
+          st === 'up' ||
+          st === 'pass' ||
+          st === 'true' ||
+          json?.ok === true;
+        if (!healthy && st) {
+          bodyOk = false;
+          bodyNote = `Health body: status=${json.status}`;
+        } else if (db && db !== 'ok' && db !== 'healthy' && db !== 'up') {
+          bodyOk = false;
+          bodyNote = `Database: ${json.database}`;
+        } else if (healthy) {
+          bodyNote = json.service ? `OK · ${json.service}` : 'Health OK';
+        }
+      } catch {
+        // ignore
+      }
+    }
+    if (res.ok && bodyOk) {
       return {
         status: ms > 1500 ? 'degraded' : 'online',
         lastChecked: new Date().toISOString(),
         responseMs: ms,
-        notes: ms > 1500 ? 'Javob sekin' : undefined,
+        notes: ms > 1500 ? 'Javob sekin' : bodyNote,
       };
     }
     return {
       status: 'offline',
       lastChecked: new Date().toISOString(),
       responseMs: ms,
-      notes: `HTTP ${res.status}`,
+      notes: bodyNote || `HTTP ${res.status}`,
     };
   } catch (e) {
     clearTimeout(timeout);
@@ -209,18 +251,27 @@ async function checkDirect(
 
 /** Avval proxy, ishlamasa to‘g‘ridan-to‘g‘ri fetch */
 export async function checkProjectHealth(project: Project): Promise<Partial<Project>> {
-  if (!project.url) {
+  if (!isMonitorableUrl(project.url)) {
     const lastChecked = new Date().toISOString();
+    const reason = project.url
+      ? 'GitHub/repo URL — production health emas'
+      : project.type === 'telegram_bot'
+        ? 'HTTP health yo‘q (Telegram bot)'
+        : project.type === 'mobile_app'
+          ? 'HTTP health yo‘q (mobile ilova)'
+          : 'Tekshiriladigan production URL yo‘q';
     const history = appendHistory(project.history, {
       at: lastChecked,
       status: 'unknown',
-      notes: 'URL berilmagan',
+      notes: reason,
     });
     return {
       status: 'unknown',
       lastChecked,
       responseMs: undefined,
-      notes: 'URL berilmagan',
+      notes: reason,
+      // Soxta GitHub URL larni saqlamaymiz
+      ...(project.url && !isMonitorableUrl(project.url) ? { url: undefined } : {}),
       history,
       uptimePercent: calcUptimePercent(history),
     };

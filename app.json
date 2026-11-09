@@ -16,7 +16,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.mykontroller.app",
       "infoPlist": {
-        "UIBackgroundModes": ["fetch"]
+        "UIBackgroundModes": [
+          "fetch"
+        ]
       }
     },
     "android": {
@@ -25,11 +27,15 @@
         "backgroundColor": "#0B1F33"
       },
       "package": "com.mykontroller.app",
+      "versionCode": 1,
+      "usesCleartextTraffic": true,
       "navigationBar": {
         "backgroundColor": "#FFFFFF",
         "barStyle": "dark-content"
       },
       "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
         "POST_NOTIFICATIONS"
@@ -45,9 +51,15 @@
         }
       ]
     ],
+    "owner": "mirzarahimdev",
     "extra": {
       "eas": {
-        "projectId": "mykontroller-local"
+        "projectId": "b0b88280-537f-4e43-aa09-4d811c0d59a3"
+      },
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
       }
     }
   }

@@ -31,12 +31,18 @@ export const KNOWN_GITHUB_REPOS: Array<{
     name: 'Dasturlash_web',
     private: true,
     description: 'CodePraktika / dasturlash platformasi',
+    // DNS hozir ishlamaydi — seed URL orqali tekshiriladi
     homepage: 'https://codepraktika.uz',
   },
   {
     name: 'Restoran_web',
     description: 'FoodUZ restoran/yetkazib berish',
     homepage: 'https://fooduz.uz',
+  },
+  {
+    name: 'MY_controller',
+    private: true,
+    description: 'MyKontroller monitoring ilovasi',
   },
   {
     name: 'Dastrulash_web-2',

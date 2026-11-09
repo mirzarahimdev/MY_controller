@@ -26,9 +26,9 @@ export function SummaryStrip({ summary }: { summary: StatusSummary }) {
   return (
     <View style={styles.wrap}>
       <Cell label="Jami" value={summary.total} color={colors.ink} />
-      <Cell label="Online" value={summary.online} color={colors.online} />
+      <Cell label="Ishlayapti" value={summary.online} color={colors.online} />
       <Cell label="Sekin" value={summary.degraded} color={colors.degraded} />
-      <Cell label="Offline" value={summary.offline} color={colors.offline} last />
+      <Cell label="Yo‘q" value={summary.offline} color={colors.offline} last />
     </View>
   );
 }

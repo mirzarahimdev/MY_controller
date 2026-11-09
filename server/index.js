@@ -114,6 +114,7 @@ app.post('/check', async (req, res) => {
       method: String(method || 'GET').toUpperCase(),
       headers: {
         'User-Agent': 'MyKontroller-Proxy',
+        Accept: 'application/json, text/plain, */*',
         ...sanitizeHeaders(headers),
       },
       signal: controller.signal,
@@ -121,8 +122,40 @@ app.post('/check', async (req, res) => {
     });
     clearTimeout(timeout);
     const responseMs = Date.now() - started;
-    const ok = response.status >= 200 && response.status < 400;
+    const httpOk = response.status >= 200 && response.status < 400;
+    const bodyText = await response.text().catch(() => '');
+    const path = parsed.pathname || '';
+    const looksHealth = /\/health\/?$/i.test(path) || /\/api\/health\/?$/i.test(path);
 
+    let bodyOk = true;
+    let bodyNote;
+    if (httpOk && looksHealth && bodyText) {
+      try {
+        const json = JSON.parse(bodyText);
+        const st = String(json?.status ?? json?.ok ?? '').toLowerCase();
+        const db = json?.database != null ? String(json.database).toLowerCase() : null;
+        const healthy =
+          st === 'ok' ||
+          st === 'healthy' ||
+          st === 'up' ||
+          st === 'pass' ||
+          st === 'true' ||
+          json?.ok === true;
+        if (!healthy && st) {
+          bodyOk = false;
+          bodyNote = `Health body: status=${json.status}`;
+        } else if (db && db !== 'ok' && db !== 'healthy' && db !== 'up') {
+          bodyOk = false;
+          bodyNote = `Database: ${json.database}`;
+        } else if (healthy) {
+          bodyNote = json.service ? `OK · ${json.service}` : 'Health OK';
+        }
+      } catch {
+        // HTML/health bo‘lmasa — faqat HTTP kodiga tayanamiz
+      }
+    }
+
+    const ok = httpOk && bodyOk;
     return res.json({
       ok,
       status: ok ? (responseMs > 1500 ? 'degraded' : 'online') : 'offline',
@@ -131,8 +164,8 @@ app.post('/check', async (req, res) => {
       notes: ok
         ? responseMs > 1500
           ? 'Javob sekin'
-          : undefined
-        : `HTTP ${response.status}`,
+          : bodyNote
+        : bodyNote || `HTTP ${response.status}`,
       checkedAt: new Date().toISOString(),
     });
   } catch (error) {

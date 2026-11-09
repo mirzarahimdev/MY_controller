@@ -3,7 +3,7 @@ import { Project } from '../types/project';
 export const GITHUB_USERNAME = 'mirzarahimdev';
 
 /** Seed o‘zgarganda bump — URL + deploy maydonlari yangilanadi */
-export const GITHUB_SEED_VERSION = 'mirzarahimdev.v4-all';
+export const GITHUB_SEED_VERSION = 'mirzarahimdev.v5-accurate';
 
 function page(repo: string): string {
   return `https://github.com/${GITHUB_USERNAME}/${repo}`;
@@ -56,13 +56,14 @@ export const INITIAL_PROJECTS: Project[] = [
     name: 'Mehmon Hona',
     type: 'website',
     url: 'https://mehmon.it-zone.uz',
-    description: 'Mehmonxona boshqaruvi (xonalar, bronlar). Frontend Vercel, API VPS da.',
+    description:
+      'Mehmonxona boshqaruvi. Deploy maqsadi: mehmon.it-zone.uz (hozir 502 bo‘lishi mumkin).',
     deployStatus: 'live',
     deployHost: 'mehmon.it-zone.uz',
     deployWhere: 'Vercel (Vite FE) + VPS nginx (API)',
     deployStack: 'React/Vite + backend API',
     deployNotes:
-      'vercel.json /api ni mehmon.it-zone.uz/api ga yo‘naltiradi. Backend 502 bo‘lsa sayt ham yiqiladi.',
+      'Health = domen HTTP. Backend 502 bo‘lsa status Offline (yashil emas).',
     notifyOnDown: true,
   }),
   project({
@@ -112,13 +113,14 @@ export const INITIAL_PROJECTS: Project[] = [
     name: 'FoodUZ',
     type: 'website',
     url: 'https://fooduz.uz',
-    description: 'Food delivery / restoran buyurtma. Domen bor, lekin deploy barqaror emas.',
-    deployStatus: 'partial',
-    deployHost: 'fooduz.uz (reklama/brand)',
-    deployWhere: 'To‘liq Vercel/systemd hujjati yo‘q — lokal Vite + FastAPI',
+    description:
+      'Food delivery / restoran. Domen reklama qilingan, lekin DNS hozir resolve qilmaydi.',
+    deployStatus: 'not_deployed',
+    deployHost: 'fooduz.uz (DNS yo‘q)',
+    deployWhere: 'Production deploy topilmadi — lokal Vite + FastAPI',
     deployStack: 'React/Vite + FastAPI',
     deployNotes:
-      'Production deploy docs yo‘q. Domen javob bersa ham 5xx bo‘lishi mumkin. Lokal health: localhost:8000/api/health',
+      'Tekshiruv DNS fail bersa — offline. Repo: ' + page('Restoran_web'),
     notifyOnDown: true,
   }),
   project({
@@ -126,23 +128,24 @@ export const INITIAL_PROJECTS: Project[] = [
     name: 'CodePraktika',
     type: 'website',
     url: 'https://codepraktika.uz',
-    description: 'Amaliy dasturlash platformasi. Domen bor, deploy qisman / nosoz.',
-    deployStatus: 'partial',
-    deployHost: 'codepraktika.uz',
-    deployWhere: 'Dockerfile + nginx image (backend:8000 proxy) — VPS path hujjatsiz',
+    description:
+      'Amaliy dasturlash platformasi. Domen e’lon qilingan, DNS hozir resolve qilmaydi.',
+    deployStatus: 'not_deployed',
+    deployHost: 'codepraktika.uz (DNS yo‘q)',
+    deployWhere: 'Dockerfile bor — VPS path/deploy hujjatsiz',
     deployStack: 'React/Vite + Monaco + Docker/nginx',
-    deployNotes: `${page('Dasturlash_web')} · Hozirda domen 5xx qaytarishi mumkin.`,
+    deployNotes: `${page('Dasturlash_web')} · DNS fail = offline.`,
     notifyOnDown: true,
   }),
   project({
     id: 'gh:mirzarahimdev/Dastrulash_web-2',
     name: 'Dastrulash Web 2',
     type: 'website',
-    url: `https://api.github.com/repos/${GITHUB_USERNAME}/Dastrulash_web-2`,
-    description: 'Dasturlash web v2. Public production URL topilmadi.',
+    url: undefined,
+    description: 'Dasturlash web v2. Public production URL yo‘q — faqat GitHub repo.',
     deployStatus: 'not_deployed',
     deployHost: '—',
-    deployWhere: 'Serverga chiqarilmagan (yoki URL noma’lum)',
+    deployWhere: 'Serverga chiqarilmagan',
     deployStack: 'TypeScript',
     deployNotes: page('Dastrulash_web-2'),
     notifyOnDown: false,

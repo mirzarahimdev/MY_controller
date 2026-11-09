@@ -56,6 +56,15 @@ export function ProjectCard({ project }: { project: Project }) {
           <Text style={styles.url} numberOfLines={1}>
             {project.url}
           </Text>
+        ) : (
+          <Text style={styles.noUrl} numberOfLines={1}>
+            Production URL yo‘q — online/offline tekshirilmaydi
+          </Text>
+        )}
+        {project.notes ? (
+          <Text style={styles.notes} numberOfLines={1}>
+            {project.notes}
+          </Text>
         ) : null}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
@@ -134,6 +143,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 12,
     color: colors.accent,
+    fontWeight: '600',
+  },
+  noUrl: {
+    marginTop: 4,
+    fontSize: 12,
+    color: colors.soft,
+    fontWeight: '600',
+  },
+  notes: {
+    marginTop: 4,
+    fontSize: 12,
+    color: colors.muted,
     fontWeight: '600',
   },
   footer: {
